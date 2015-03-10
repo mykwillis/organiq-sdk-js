@@ -49,7 +49,7 @@ describe 'SDK Network Round Trip', ->
       b: true                     # boolean property
       events: ['e1', 'e2']        # custom events
       __emitter: new EventEmitter()
-      on: (ev, fn) -> return this.__emitter.on(ev, fn)
+      on: (ev, fn) -> @__emitter.on ev, fn
 
     # Local SDK container.
     app = organiq { apiRoot: 'ws://localhost:1234' }
@@ -105,7 +105,7 @@ describe 'SDK Network Round Trip', ->
     it 'receives events from connected device', (done) ->
       testEventValue = 'test-event-val'
       proxy.on 'e1', (val) ->
-        val.should.equal testEventValue
+        val.should.deep.equal testEventValue
         done()
       nativeDevice.__emitter.emit 'e1', testEventValue
 
@@ -131,8 +131,8 @@ describe 'SDK Local Round Trip', ->
       n: 42                       # number property
       b: true                     # boolean property
       events: ['e1', 'e2']        # custom events
-      __emitter: new EventEmitter
-      on: (ev, fn) -> return this.__emitter.on(ev,fn)
+      __emitter: new EventEmitter()
+      on: (ev, fn) -> @__emitter.on ev, fn
 
     # Local node. Note that we can't use an SDK node because that requires
     # a gateway connection. Instead, we manually build the DeviceWrapper and
@@ -189,7 +189,7 @@ describe 'SDK Local Round Trip', ->
     it 'receives events from connected device', (done) ->
       testEventValue = 'test-event-val'
       proxy.on 'e1', (val) ->
-        val.should.equal testEventValue
+        val.should.deep.equal testEventValue
         done()
       nativeDevice.__emitter.emit 'e1', testEventValue
 
