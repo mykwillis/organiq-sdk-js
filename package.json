@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/organiq/organiq-sdk-js",
   "dependencies": {
-    "organiq-core": "organiq/organiq-core#4265bc692fae",
+    "organiq-core": "organiq/organiq-core.git#pubsub",
     "debug": "^2.1.2",
     "when": "^3.7.2",
     "ws": "^0.7.1"
