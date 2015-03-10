@@ -105,7 +105,7 @@ describe 'SDK Network Round Trip', ->
     it 'receives events from connected device', (done) ->
       testEventValue = 'test-event-val'
       proxy.on 'e1', (val) ->
-        val.should.deep.equal testEventValue
+        val.should.equal testEventValue
         done()
       nativeDevice.__emitter.emit 'e1', testEventValue
 
