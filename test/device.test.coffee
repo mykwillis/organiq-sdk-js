@@ -274,7 +274,6 @@ describe 'DeviceWrapper', ->
 
       testDevice.emit 'e1', 'a'
 
-
   describe 'describe()', ->
     it 'returns device schema', ->
       testSchema =
