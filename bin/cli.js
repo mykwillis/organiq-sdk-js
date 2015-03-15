@@ -7,7 +7,7 @@ var Router = require('./gateway.js');
 
 var VERSION = require('../package.json').version;
 
-// The default apiRoot is 'http://api.organiq.io'. We look for an override
+// The default apiRoot is 'ws://api.organiq.io'. We look for an override
 // in the following places:
 //    `--apiRoot` command line option
 //    `apiRoot` property of organiq.json in current directory
@@ -35,7 +35,7 @@ function getApiRoot() {
   var apiRoot = argv['apiRoot'] || argv['a'];
   if (!apiRoot) { apiRoot = readPackageData()['apiRoot']; }
   if (!apiRoot) { apiRoot = process.env.ORGANIQ_APIROOT; }
-  if (!apiRoot) { apiRoot = 'http://api.organiq.io'; }
+  if (!apiRoot) { apiRoot = 'ws://api.organiq.io'; }
   return apiRoot;
 }
 
@@ -59,11 +59,7 @@ function _getLocalExternalIPAddress() {
     return ip;
 }
 
-if ( process.argv[0] === 'node' ) {
-  process.argv.shift();
-}
-
-if ( process.argv.length < 2 ) {
+if ( argv._.length < 1 ) {
   console.log("organiq v"+VERSION+" - Command Line Interface to Organiq");
   console.log("usage: organiq <command> [args]");
   console.log("");
@@ -77,7 +73,7 @@ if ( process.argv.length < 2 ) {
 }
 
 
-var command = process.argv[1];
+var command = argv._[0];
 switch( command ) {
   case 'init':
     var useLocalDevServer = argv['local-dev'];
@@ -85,7 +81,7 @@ switch( command ) {
       // find an external IPv4 address for the local host
       var ip = _getLocalExternalIPAddress();
       if (ip) {
-        apiRoot = 'http://' + ip + ':1340';
+        apiRoot = 'ws://' + ip + ':1340';
         console.log('Initialized organiq.json with API root: ' + apiRoot);
       } else {
         console.error('Unable to determine external IP address. Use --api-root to specify it explicitly.');
@@ -95,11 +91,11 @@ switch( command ) {
     writePackageData(apiRoot);
     break;
   case 'server':
-    if (process.argv.length < 3) {
+    if (argv._.length < 2) {
       console.log("'server' requires subcommand.");
       return;
     }
-    var subcommand = process.argv[2];
+    var subcommand = argv._[1];
     switch(subcommand) {
       case 'start':
         var port = argv['port'] || 1340;

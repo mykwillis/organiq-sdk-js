@@ -1,6 +1,6 @@
 {
   "name": "organiq",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "description": "Organiq SDK for JavaScript.",
   "main": "./lib/index.js",
   "bin": {
@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/organiq/organiq-sdk-js",
   "dependencies": {
-    "organiq-core": "organiq/organiq-core.git#pubsub",
+    "organiq-core": "organiq/organiq-core.git#v0.2.0",
     "debug": "^2.1.2",
     "when": "^3.7.2",
     "ws": "^0.7.1"
@@ -36,6 +36,7 @@
     "jshint": "^2.6.3",
     "minimist": "^1.1.0",
     "mocha": "^2.2.0",
+    "rewire": "^2.3.1",
     "should": "^5.1.0",
     "sinon": "^1.13.0",
     "sinon-chai": "^2.7.0"
