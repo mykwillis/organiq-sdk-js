@@ -8,7 +8,9 @@
   },
   "scripts": {
     "test": "jshint ./lib && mocha",
-    "lint": "jshint ./lib"
+    "lint": "jshint ./lib",
+    "browserify": "browserify -r ./lib/index.js:organiq --exclude ./package.json --exclude nodejs-websocket -o build/organiq.js",
+    "watchify": "watchify -r ./lib/index.js:organiq --debug --verbose --exclude ./package.json --exclude nodejs-websocket -o build/organiq.js"
   },
   "repository": {
     "type": "git",
@@ -39,6 +41,7 @@
     "rewire": "^2.3.1",
     "should": "^5.1.0",
     "sinon": "^1.13.0",
-    "sinon-chai": "^2.7.0"
+    "sinon-chai": "^2.7.0",
+    "watchify": "^3.1.0"
   }
 }
