@@ -4,9 +4,9 @@
   - or -
   node blink-tessel.js (if you don't have Tessel)
 */
-var tessel = require('tessel');
-// var tessel = require('./tessel-sim');  // use this if you don't have Tessel
-var organiq = require('organiq-tessel');
+//var tessel = require('tessel');
+var tessel = require('./tessel-sim');  // use this if you don't have Tessel
+var organiq = require('organiq');
 organiq.registerDevice('Blinker', {
     toggleLed: function() { tessel.led[0].toggle(); }
 });

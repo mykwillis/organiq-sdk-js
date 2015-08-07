@@ -3,7 +3,6 @@
 
 var argv = require('minimist')(process.argv.slice(2));
 var fs = require('fs');
-var Router = require('./gateway.js');
 
 var VERSION = require('../package.json').version;
 
@@ -93,24 +92,8 @@ switch( command ) {
     writePackageData(apiRoot);
     break;
   case 'server':
-    if (argv._.length < 2) {
-      console.log("'server' requires subcommand.");
-      return;
-    }
-    var subcommand = argv._[1];
-    switch(subcommand) {
-      case 'start':
-        var port = argv['port'] || 1340;
-        var router = new Router({ port: port });
-        console.log("Organiq development server v"+VERSION+" started on port " + port);
-        break;
-
-      case 'help':
-        console.log("Usage: organiq server <command> [args]");
-        console.log("Where <command> is one of:");
-        console.log("  start --port <port>");
-        break;
-    }
+    console.log('The Organiq Gateway Server no longer ships with the SDK. ');
+    console.log('Use `npm install -g organiq-gateway` to install.');
     break;
   default:
     console.log("Unrecognized command '%s'", command);

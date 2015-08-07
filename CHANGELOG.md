@@ -1,5 +1,8 @@
 # Organiq SDK for JavaScript - Change Log
 
+## v0.4.0
+ * Significant rewrite/refactor to remove shared organiq-core dependency
+
 ## v0.2.1
  * FIX: organiq init --local-dev now uses 'ws' prefix instead of 'http' for
         apiRoot.
