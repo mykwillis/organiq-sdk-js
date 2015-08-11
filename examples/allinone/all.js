@@ -11,6 +11,11 @@ organiq.registerDevice('Demo Device', device);
 
 var driver = function(req, next) {
   console.log('driver called: ' + req.method + ' ' + req.identifier);
+  if (req.method === 'NOTIFY' && req.identifier === 'buttonReleas') {
+    console.log('fixing event name');
+    req.identifier = 'buttonRelease';
+  }
+
   return next();
 };
 organiq.installDriver('Demo Device', driver);
