@@ -3,6 +3,7 @@
 
 var argv = require('minimist')(process.argv.slice(2));
 var fs = require('fs');
+var rest = require('restler');
 
 var VERSION = require('../package.json').version;
 
@@ -31,11 +32,17 @@ function readPackageData() {
   return _packageData || {};
 }
 
-function getApiRoot() {
+function getApiRoot(protocol) {
   var apiRoot = argv['apiRoot'] || argv['a'];
   if (!apiRoot) { apiRoot = readPackageData()['apiRoot']; }
   if (!apiRoot) { apiRoot = process.env.ORGANIQ_APIROOT; }
   if (!apiRoot) { apiRoot = 'ws://api.organiq.io'; }
+  if (protocol) {
+    if (['http', 'https', 'ws', 'wss'].indexOf(protocol) < 0) {
+      throw Error('Invalid protocol specified: ' + protocol);
+    }
+    apiRoot = apiRoot.replace(/^ws/, protocol);
+  }
   return apiRoot;
 }
 
@@ -94,6 +101,30 @@ switch( command ) {
   case 'server':
     console.log('The Organiq Gateway Server no longer ships with the SDK. ');
     console.log('Use `npm install -g organiq-gateway` to install.');
+    break;
+  case 'register':
+    var email = argv['email'];
+    var name = argv['name'];
+    var password = argv['password'];
+
+    if (!email || !name || !password) {
+      throw Error('email, name, and password are required.')
+    }
+
+    var data = {
+      email: email,
+      password: password,
+      surname: '.',
+      given_name: name,
+      profile: {
+        namespace: 'com.example'
+      }
+    };
+    rest.postJson(getApiRoot('http') + '/users/', data).on('complete',
+      function(data, response) {
+        console.log('response.statusCode: ' + response.statusCode);
+        console.log('data: ' + JSON.stringify(data));
+      });
     break;
   default:
     console.log("Unrecognized command '%s'", command);
