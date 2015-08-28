@@ -4,6 +4,8 @@
 var argv = require('minimist')(process.argv.slice(2));
 var fs = require('fs');
 var rest = require('restler');
+var prompt = require('prompt');
+var debug = require('debug')('organiq:cli');
 
 var VERSION = require('../package.json').version;
 
@@ -103,29 +105,143 @@ switch( command ) {
     console.log('Use `npm install -g organiq-gateway` to install.');
     break;
   case 'register':
-    var email = argv['email'];
-    var name = argv['name'];
-    var password = argv['password'];
-
-    if (!email || !name || !password) {
-      throw Error('email, name, and password are required.')
-    }
-
-    var data = {
-      email: email,
-      password: password,
-      surname: '.',
-      given_name: name,
-      profile: {
-        namespace: 'com.example'
+    var schema = {
+      properties: {
+        givenName: {
+          message: 'First (given) name',
+          required: true,
+          validator: /^[a-zA-Z\s\-]+$/,
+          warning: 'Name should contain only letters, spaces, or dashes'
+        },
+        surname: {
+          message: 'Last (family) name',
+          required: true,
+          validator: /^[a-zA-Z\s\-]+$/,
+          warning: 'Name should contain only letters, spaces, or dashes'
+        },
+        email: {
+          message: '     Email address',
+          required: true,
+          validator: /^.+@.+\..+$/,
+          warning: 'Please enter a valid email address (you@example.com)'
+        },
+        password: {
+          message: ' Choose a password',
+          hidden: true
+        },
+        password2: {
+          message: ' Re-enter password',
+          hidden: true
+        }
       }
     };
-    rest.postJson(getApiRoot('http') + '/users/', data).on('complete',
-      function(data, response) {
-        console.log('response.statusCode: ' + response.statusCode);
-        console.log('data: ' + JSON.stringify(data));
-      });
+
+    prompt.message  = "organiq".white.bold;
+    prompt.override = argv;
+
+    if (argv['name']) {
+      var names = argv['name'].split(' ');
+      console.log('name is ' + names[0] + ' ' + names[1]);
+      prompt.override['givenName'] = names[0];
+      if (names.length > 1) {
+        prompt.override['surname'] = names[1];
+      }
+    }
+
+
+    prompt.get(schema, function(err, result) {
+      if (result.password !== result.password2) {
+        console.log('Passwords do not match!');
+        return -1;
+      }
+
+      var data = {
+        email: result.email,
+        password: result.password,
+        surname: result.surname,
+        given_name: result.givenName,
+        profile: {
+          namespace: 'com.example'
+        }
+      };
+
+      console.log('Creating user account for ' + result.email + '...');
+      debug('apiroot: ' + getApiRoot('http'));
+      rest.postJson(getApiRoot('http') + '/users/', data).on('complete',
+        function(data, response) {
+          if (data instanceof Error) {
+            console.log('Failed to connect to server at: ' + getApiRoot('http'));
+            return -3;
+          }
+          if (response.statusCode !== 201) {
+            console.log('Account registration failed.'.red);
+            if (response.statusCode === 400) {
+              if (typeof data['email'] !== 'undefined') {
+                if (/This field must be unique/.test(data.email[0])) {
+                  console.log('An account with the supplied email already exists.');
+                  return -2;
+                }
+              }
+            }
+            console.log(response.statusCode + ': ' + JSON.stringify(data));
+            return -1;
+          }
+          console.log('Account was successfully created.');
+          console.log('Click the link in the email we sent to activate your account.');
+          //console.log('data: ' + JSON.stringify(data));
+
+        });
+    });
     break;
+  case 'generate-api-key':
+    var schema2 = {
+      properties: {
+        email: {
+          message: '     Email address',
+          required: true,
+          validator: /^.+@.+\..+$/,
+          warning: 'Please enter a valid email address (you@example.com)'
+        },
+        password: {
+          message: ' Enter password',
+          hidden: true
+        },
+        keyName: {
+          message: ' Enter a friendly name for the key (optional)',
+          required: false
+        }
+      }
+    };
+
+    prompt.message  = "organiq".white.bold;
+    prompt.override = argv;
+
+    prompt.get(schema2, function(err, result) {
+      var data = {
+        name: result.keyName
+      };
+
+      var options = {
+        username: result.email,
+        password: result.password
+      };
+
+      console.log('Requesting API key for ' + result.email + '...');
+      rest.postJson(getApiRoot('http') + '/apikeys/', data, options).on('complete',
+        function(data, response) {
+          if (response.statusCode !== 201) {
+            console.log('API Key request failed.'.red);
+            console.log(response.statusCode + ': ' + JSON.stringify(data));
+            return -1;
+          }
+          console.log('API Key successfully created.');
+          console.log('      API Key Id: ' + data.id);
+          console.log('  API Key Secret: ' + data.secret);
+          //console.log('data: ' + JSON.stringify(data));
+        });
+    });
+    break;
+
   default:
     console.log("Unrecognized command '%s'", command);
 }
