@@ -7,6 +7,7 @@ var rest = require('restler');
 var prompt = require('prompt');
 var debug = require('debug')('organiq:cli');
 var osenv = require('osenv');
+var path = require('path');
 
 var VERSION = require('../package.json').version;
 
@@ -16,11 +17,13 @@ var VERSION = require('../package.json').version;
 //    `apiRoot` property of organiq.json in current directory
 //    `apiRoot` property of organiq.json in home directory
 //    process.env.ORGANIQ_APIROOT
-var optionsPath = './organiq.json';
-
+var _optionsPath = './organiq.json';
 var _packageData = null;
+var _globalOptionsPath = path.join(osenv.home(), '.organiq');
+var _globalPackageData = null;
 
-function writePackageData(apiRoot, apiKeyId, apiKeySecret) {
+function writePackageData(apiRoot, apiKeyId, apiKeySecret, global) {
+  var optionsPath = global ? _globalOptionsPath : _optionsPath;
   var packageData = {
     'apiRoot': apiRoot,
     'namespace': defaultNamespace
@@ -33,21 +36,25 @@ function writePackageData(apiRoot, apiKeyId, apiKeySecret) {
   }
   var s = JSON.stringify(packageData, null, 4);
   fs.writeFileSync(optionsPath, s);
-  _packageData = null;
+  if (global) { _globalPackageData = null; }
+  else { _packageData = null; }
 }
 
-function readPackageData() {
-  if (!_packageData && fs.existsSync(optionsPath)) {
+function readPackageData(global) {
+  var packageData = global ? _globalPackageData : _packageData;
+  var optionsPath = global ? _globalOptionsPath : _optionsPath;
+  if (!packageData && fs.existsSync(optionsPath)) {
     var s = fs.readFileSync(optionsPath, 'utf8');
-    _packageData = JSON.parse(s);
+    packageData = JSON.parse(s);
   }
-  return _packageData || {};
+  return packageData || {};
 }
 
 function getApiRoot(protocol) {
   var apiRoot = argv['apiRoot'] || argv['a'];
   if (!apiRoot) { apiRoot = readPackageData()['apiRoot']; }
   if (!apiRoot) { apiRoot = process.env.ORGANIQ_APIROOT; }
+  if (!apiRoot) { apiRoot = readPackageData(true)['apiRoot']; }
   if (!apiRoot) { apiRoot = 'ws://api.organiq.io'; }
   if (protocol) {
     if (['http', 'https', 'ws', 'wss'].indexOf(protocol) < 0) {
@@ -62,6 +69,7 @@ function getApiKeyId() {
   var apiKeyId = argv['apiKeyId'] || argv['id'];
   if (!apiKeyId) { apiKeyId = readPackageData()['apiKeyId']; }
   if (!apiKeyId) { apiKeyId = process.env.ORGANIQ_APIKEY_ID; }
+  if (!apiKeyId) { apiKeyId = readPackageData(true)['apiKeyId']; }
   if (!apiKeyId) { apiKeyId = ''; }
   return apiKeyId;
 }
@@ -70,6 +78,7 @@ function getApiKeySecret() {
   var apiKeySecret = argv['apiKeySecret'] || argv['secret'];
   if (!apiKeySecret) { apiKeySecret = readPackageData()['apiKeySecret']; }
   if (!apiKeySecret) { apiKeySecret = process.env.ORGANIQ_APIKEY_SECRET; }
+  if (!apiKeySecret) { apiKeySecret = readPackageData(true)['apiKeySecret']; }
   if (!apiKeySecret) { apiKeySecret = ''; }
   return apiKeySecret;
 }
@@ -110,8 +119,12 @@ if ( argv._.length < 1 ) {
   console.log("APIKEY_ID:     " + (apiKeyId ? "'" + apiKeyId + "'" : "not set"));
   console.log("APIKEY_SECRET: " + (apiKeySecret ? "[redacted]" : "not set"));
   console.log("");
-  console.log("You can override APIXXX values with --apiXxx argument, 'apiXxx' in organiq.json,");
-  console.log(" or ORGANIQ_APIXXX environment variable.");
+  console.log("APIXXX values are read from the following locations (in order):");
+  console.log("  - command line argument (e.g., --apikeyId ABCDEF01234)");
+  console.log("  - ./organiq.json setting ( {\"apiKeyId\": \"ABCDEF\" }");
+  console.log("  - environment variable (e.g., ORGANIQ_APIKEY_ID=ABCDEF)");
+  console.log("  - global configuration file setting");
+  console.log("Global settings are read from " + _globalOptionsPath);
   process.exit(1);
 }
 
@@ -151,6 +164,10 @@ switch( command ) {
       });
     }
 
+    if (!apiKeyId || !apiKeySecret) {
+      console.log("Warning! No APIKEY information found.");
+      console.log("Use `organiq init --generate-api-key` to generate one.")
+    }
     // case where no new key is to be generated.
     writePackageData(apiRoot, apiKeyId, apiKeySecret);
     break;
@@ -169,6 +186,11 @@ switch( command ) {
   case 'generate-api-key':
     _generateApiKey(function(err, result) {
       if (err) { console.log('Failed to get API Key.'.red); console.log(err); return -1; }
+      if (argv['global']) {
+        writePackageData(readPackageData(true)['apiRoot'], result.id, result.secret, true);
+        console.log("API Key saved in global configuration.");
+        return -1;
+      }
       console.log('      API Key Id: ' + result.id);
       console.log('  API Key Secret: ' + result.secret);
     });
