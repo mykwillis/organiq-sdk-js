@@ -22,10 +22,11 @@ var _packageData = null;
 var _globalOptionsPath = path.join(osenv.home(), '.organiq');
 var _globalPackageData = null;
 
-function writePackageData(apiRoot, apiKeyId, apiKeySecret, global) {
+function writePackageData(apiRoot, dpiRoot, apiKeyId, apiKeySecret, global) {
   var optionsPath = global ? _globalOptionsPath : _optionsPath;
   var packageData = {
     'apiRoot': apiRoot,
+    'dpiRoot': dpiRoot,
     'namespace': defaultNamespace
   };
   if (apiKeyId) {
@@ -65,6 +66,21 @@ function getApiRoot(protocol) {
   return apiRoot;
 }
 
+function getDpiRoot(protocol) {
+  var dpiRoot = argv['dpiRoot'] || argv['a'];
+  if (!dpiRoot) { dpiRoot = readPackageData()['dpiRoot']; }
+  if (!dpiRoot) { dpiRoot = process.env.ORGANIQ_APIROOT; }
+  if (!dpiRoot) { dpiRoot = readPackageData(true)['dpiRoot']; }
+  if (!dpiRoot) { dpiRoot = 'ws://dpi.organiq.io'; }
+  if (protocol) {
+    if (['http', 'https', 'ws', 'wss'].indexOf(protocol) < 0) {
+      throw Error('Invalid protocol specified: ' + protocol);
+    }
+    dpiRoot = dpiRoot.replace(/^ws/, protocol);
+  }
+  return dpiRoot;
+}
+
 function getApiKeyId() {
   var apiKeyId = argv['apiKeyId'] || argv['id'];
   if (!apiKeyId) { apiKeyId = readPackageData()['apiKeyId']; }
@@ -84,6 +100,7 @@ function getApiKeySecret() {
 }
 
 var apiRoot = getApiRoot();
+var dpiRoot = getDpiRoot();
 var apiKeyId = getApiKeyId();
 var apiKeySecret = getApiKeySecret();
 var defaultNamespace = '.';
@@ -116,6 +133,7 @@ if ( argv._.length < 1 ) {
   console.log("  server - configure local test server. See `iq server help`");
   console.log("");
   console.log("APIROOT:       '" + apiRoot + "'");
+  console.log("DPIROOT:       '" + dpiRoot + "'");
   console.log("APIKEY_ID:     " + (apiKeyId ? "'" + apiKeyId + "'" : "not set"));
   console.log("APIKEY_SECRET: " + (apiKeySecret ? "[redacted]" : "not set"));
   console.log("");
@@ -138,10 +156,10 @@ switch( command ) {
       // find an external IPv4 address for the local host
       var ip = _getLocalExternalIPAddress();
       if (ip) {
-        apiRoot = 'ws://' + ip + ':1340';
-        console.log('Initialized organiq.json with API root: ' + apiRoot);
+        dpiRoot = 'ws://' + ip + ':1340';
+        console.log('Initialized organiq.json with DPI root: ' + dpiRoot);
       } else {
-        console.error('Unable to determine external IP address. Use --api-root to specify it explicitly.');
+        console.error('Unable to determine external IP address. Use --dpi-root to specify it explicitly.');
         process.exit(1);
       }
     }
@@ -159,7 +177,7 @@ switch( command ) {
           console.log(err);
           process.exit(1);
         }
-        writePackageData(apiRoot, result.id, result.secret);
+        writePackageData(apiRoot, dpiRoot, result.id, result.secret);
         process.exit(1);
       });
     }
@@ -169,7 +187,7 @@ switch( command ) {
       console.log("Use `organiq init --generate-api-key` to generate one.")
     }
     // case where no new key is to be generated.
-    writePackageData(apiRoot, apiKeyId, apiKeySecret);
+    writePackageData(apiRoot, dpiRoot, apiKeyId, apiKeySecret);
     break;
   case 'server':
     console.log('The Organiq Gateway Server no longer ships with the SDK. ');
@@ -187,7 +205,12 @@ switch( command ) {
     _generateApiKey(function(err, result) {
       if (err) { console.log('Failed to get API Key.'.red); console.log(err); return -1; }
       if (argv['global']) {
-        writePackageData(readPackageData(true)['apiRoot'], result.id, result.secret, true);
+        writePackageData(
+          readPackageData(true)['apiRoot'],
+          readPackageData(true)['dpiRoot'],
+          result.id,
+          result.secret,
+          true);
         console.log("API Key saved in global configuration.");
         return -1;
       }
