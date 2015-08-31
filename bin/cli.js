@@ -301,14 +301,7 @@ function _registerAccount(callback) {
           return callback(data);
         }
         if (response.statusCode !== 201) {
-          if (response.statusCode === 400) {
-            if (typeof data['email'] !== 'undefined') {
-              if (/This field must be unique/.test(data.email[0])) {
-                return callback(Error('An account with the supplied email already exists.'));
-              }
-            }
-          }
-          return callback(Error(response.statusCode + ': ' + JSON.stringify(data)));
+          return callback(_responseToText(data, response));
         }
         return callback(null, data);
       });
@@ -351,7 +344,7 @@ function _generateApiKey(callback)  {
           return callback(data);
         }
         if (response.statusCode !== 201) {
-          callback(Error(response.statusCode + ': ' + JSON.stringify(data)));
+          callback(Error(_responseToText(data, response)));
         }
         callback(null, data);
       });
@@ -394,9 +387,24 @@ function _getAccountInfo(callback)  {
           return callback(data);
         }
         if (response.statusCode !== 200) {
-          callback(Error(response.statusCode + ': ' + JSON.stringify(data)));
+          callback(Error(_responseToText(data, response)))
         }
         callback(null, data);
       });
   });
+}
+
+function _responseToText(data, response) {
+  if (response.statusCode == 200) {
+    return "OK";
+  }
+  if (response.statusCode === 400) {
+    if (typeof data['email'] !== 'undefined') {
+      if (/This field must be unique/.test(data.email[0])) {
+        return 'An account with the supplied email already exists.';
+      }
+    }
+  }
+  var detail = response.statusCode == 500 ? 'Internal Server Error' : JSON.stringify(data);
+  return response.statusCode + ' (' + response.statusMessage + '): ' + detail;
 }
