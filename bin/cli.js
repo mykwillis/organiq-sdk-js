@@ -11,7 +11,7 @@ var path = require('path');
 
 var VERSION = require('../package.json').version;
 
-// The default apiRoot is 'ws://api.organiq.io'. We look for an override
+// The default apiRoot is 'wss://api.organiq.io'. We look for an override
 // in the following places:
 //    `--apiRoot` command line option
 //    `apiRoot` property of organiq.json in current directory
@@ -51,18 +51,12 @@ function readPackageData(global) {
   return packageData || {};
 }
 
-function getApiRoot(protocol) {
+function getApiRoot() {
   var apiRoot = argv['apiRoot'] || argv['a'];
   if (!apiRoot) { apiRoot = readPackageData()['apiRoot']; }
   if (!apiRoot) { apiRoot = process.env.ORGANIQ_APIROOT; }
   if (!apiRoot) { apiRoot = readPackageData(true)['apiRoot']; }
-  if (!apiRoot) { apiRoot = 'ws://api.organiq.io'; }
-  if (protocol) {
-    if (['http', 'https', 'ws', 'wss'].indexOf(protocol) < 0) {
-      throw Error('Invalid protocol specified: ' + protocol);
-    }
-    apiRoot = apiRoot.replace(/^ws/, protocol);
-  }
+  if (!apiRoot) { apiRoot = 'https://api.organiq.io'; }
   return apiRoot;
 }
 
@@ -71,13 +65,7 @@ function getDpiRoot(protocol) {
   if (!dpiRoot) { dpiRoot = readPackageData()['dpiRoot']; }
   if (!dpiRoot) { dpiRoot = process.env.ORGANIQ_APIROOT; }
   if (!dpiRoot) { dpiRoot = readPackageData(true)['dpiRoot']; }
-  if (!dpiRoot) { dpiRoot = 'ws://dpi.organiq.io'; }
-  if (protocol) {
-    if (['http', 'https', 'ws', 'wss'].indexOf(protocol) < 0) {
-      throw Error('Invalid protocol specified: ' + protocol);
-    }
-    dpiRoot = dpiRoot.replace(/^ws/, protocol);
-  }
+  if (!dpiRoot) { dpiRoot = 'wss://dpi.organiq.io'; }
   return dpiRoot;
 }
 
@@ -131,6 +119,9 @@ if ( argv._.length < 1 ) {
   console.log("Where <command> is one of:");
   console.log("  init - create organiq.json file.");
   console.log("  server - configure local test server. See `iq server help`");
+  console.log("  register - create an Organiq user account.");
+  console.log("  generate-api-key - generate an API key id and secret.");
+  console.log("  get-account-info - get information about the current user.");
   console.log("");
   console.log("APIROOT:       '" + apiRoot + "'");
   console.log("DPIROOT:       '" + dpiRoot + "'");
@@ -156,10 +147,11 @@ switch( command ) {
       // find an external IPv4 address for the local host
       var ip = _getLocalExternalIPAddress();
       if (ip) {
-        dpiRoot = 'ws://' + ip + ':1340';
+        apiRoot = 'http://' + ip + ':8000';
+        dpiRoot = 'ws://' + ip + ':1338';
         console.log('Initialized organiq.json with DPI root: ' + dpiRoot);
       } else {
-        console.error('Unable to determine external IP address. Use --dpi-root to specify it explicitly.');
+        console.error('Unable to determine external IP address.');
         process.exit(1);
       }
     }
@@ -295,7 +287,7 @@ function _registerAccount(callback) {
       }
     };
 
-    rest.postJson(getApiRoot('http') + '/users/', data).on('complete',
+    rest.postJson(getApiRoot() + '/users/', data).on('complete',
       function(data, response) {
         if (data instanceof Error) {
           return callback(data);
@@ -338,7 +330,7 @@ function _generateApiKey(callback)  {
       password: result.password
     };
 
-    rest.postJson(getApiRoot('http') + '/apikeys/', data, options).on('complete',
+    rest.postJson(getApiRoot() + '/apikeys/', data, options).on('complete',
       function(data, response) {
         if (data instanceof Error) {
           return callback(data);
@@ -381,7 +373,7 @@ function _getAccountInfo(callback)  {
       password: result.password
     };
 
-    rest.get(getApiRoot('http') + '/current_user/', options).on('complete',
+    rest.get(getApiRoot() + '/current_user/', options).on('complete',
       function(data, response) {
         if (data instanceof Error) {
           return callback(data);
