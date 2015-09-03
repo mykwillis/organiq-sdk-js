@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Copyright (c) 2014 Myk Willis & Company, LLC. All Rights Reserved.
+// Copyright (c) 2015 Organiq, Inc. All Rights Reserved.
 
 var argv = require('minimist')(process.argv.slice(2));
 var fs = require('fs');
@@ -15,7 +15,7 @@ var VERSION = require('../package.json').version;
 // in the following places:
 //    `--apiRoot` command line option
 //    `apiRoot` property of organiq.json in current directory
-//    `apiRoot` property of organiq.json in home directory
+//    `apiRoot` property of .organiq in home directory
 //    process.env.ORGANIQ_APIROOT
 var _optionsPath = './organiq.json';
 var _packageData = null;
@@ -60,10 +60,10 @@ function getApiRoot() {
   return apiRoot;
 }
 
-function getDpiRoot(protocol) {
+function getDpiRoot() {
   var dpiRoot = argv['dpiRoot'] || argv['a'];
   if (!dpiRoot) { dpiRoot = readPackageData()['dpiRoot']; }
-  if (!dpiRoot) { dpiRoot = process.env.ORGANIQ_APIROOT; }
+  if (!dpiRoot) { dpiRoot = process.env.ORGANIQ_DPIROOT; }
   if (!dpiRoot) { dpiRoot = readPackageData(true)['dpiRoot']; }
   if (!dpiRoot) { dpiRoot = 'wss://dpi.organiq.io'; }
   return dpiRoot;
@@ -118,7 +118,6 @@ if ( argv._.length < 1 ) {
   console.log("");
   console.log("Where <command> is one of:");
   console.log("  init - create organiq.json file.");
-  console.log("  server - configure local test server. See `iq server help`");
   console.log("  register - create an Organiq user account.");
   console.log("  generate-api-key - generate an API key id and secret.");
   console.log("  get-account-info - get information about the current user.");
@@ -180,10 +179,6 @@ switch( command ) {
     }
     // case where no new key is to be generated.
     writePackageData(apiRoot, dpiRoot, apiKeyId, apiKeySecret);
-    break;
-  case 'server':
-    console.log('The Organiq Gateway Server no longer ships with the SDK. ');
-    console.log('Use `npm install -g organiq-gateway` to install.');
     break;
   case 'register':
     _registerAccount(function(err, result) {
@@ -283,7 +278,7 @@ function _registerAccount(callback) {
       surname: result.surname,
       given_name: result.givenName,
       profile: {
-        namespace: 'com.example'
+        namespace: '.'
       }
     };
 

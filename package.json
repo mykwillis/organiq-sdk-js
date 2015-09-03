@@ -9,9 +9,7 @@
   "scripts": {
     "test": "jshint ./lib && mocha",
     "lint": "jshint ./lib",
-    "t": "mocha",
-    "browserify": "browserify -r ./lib/index.js:organiq --exclude ./package.json --exclude ws -o build/organiq.js",
-    "watchify": "watchify -r ./lib/index.js:organiq --debug --verbose --exclude ./package.json -o build/organiq.js"
+    "t": "mocha"
   },
   "repository": {
     "type": "git",
